@@ -29,6 +29,15 @@ def test_tcp_duplicate_raises() -> None:
         validate_listen_ports(opts2)
 
 
+def test_parse_empty_config_defaults() -> None:
+    from tulipbridge.config import parse_server_build_options_from_config
+
+    opts = parse_server_build_options_from_config({"inbounds": []})
+    assert opts.enable_vless is False
+    assert opts.enable_hysteria2 is False
+    assert opts.enable_tuic is False
+
+
 def test_tcp443_udp443_coexist() -> None:
     """TCP and UDP port numbers are independent namespaces."""
     opts = ServerBuildOptions(

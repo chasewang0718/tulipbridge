@@ -103,24 +103,26 @@
 
 > 目标：`tulipbridge update` 能自动刷新 DNS 记录和订阅内容。
 
-**薄切片（已交付）：** `update` 拉取公网 IPv4（HTTPS）、提示与路由器 WAN 对比（CGNAT / 双层路由）、列出 `config.json` 监听端口；Cloudflare 与自动 DNS 仍在下文。
+**薄切片（已交付）：** `update` 拉取公网 IPv4（HTTPS）、提示与路由器 WAN 对比（CGNAT / 双层路由）、列出 `config.json` 监听端口；可选 **Cloudflare A 记录**（环境变量 **或** `etc/cloudflare.json`，env 按字段覆盖）；定时任务见 **`docs/SCHEDULED_TASKS.md`**。
 
 - [x] **网络前置检查（薄切片）**
   - [x] 公网 IPv4 查询（api.ipify.org / ifconfig.me 回退）
   - [x] CGNAT / 路由提示（人工对比路由器 WAN 与出口 IP）
-  - [ ] 指定端口从外网可达性探测（需外部探针或路由器配合，后续）
-- [ ] **Cloudflare DDNS**
-  - 通过 Cloudflare API 更新 A 记录
-  - 短 TTL（60–120s）
-  - 配置存储：zone id、API token、域名（首次 init 时写入）
+  - [ ] 指定端口从外网可达性探测（设计说明：`docs/PORT_PROBE.md`；需外部探针，后续）
+- [x] **Cloudflare DDNS（薄切片）**
+  - [x] 环境变量：`CLOUDFLARE_API_TOKEN`、`CLOUDFLARE_ZONE_ID`、`CLOUDFLARE_RECORD_NAME`（FQDN）
+  - [x] `update` 内 GET 记录 id + PATCH A 记录，TTL 120；缓存 `etc/last_cloudflare_ip.txt`
+  - [x] **可选** `etc/cloudflare.json`（与 env 合并；示例 `docs/cloudflare.json.example`；**`tulipbridge cloudflare-write-config`** 非交互写入）
 - [x] **`update` 命令（薄切片）**
   - [x] 展示当前出口 IPv4、配置中的监听端口、CGNAT 提示；提醒 `links --public-host` 刷新订阅
-  - [ ] 检测公网 IP 变化 → 更新 DNS（依赖 Cloudflare 实现）
-  - [ ] 可接入 cron / Task Scheduler 定时执行
-- [ ] **订阅链接改用域名**
-  - 分享链接中的 server 字段使用 DDNS 域名而非 IP
+  - [x] 出口 IPv4 变化且配置 Cloudflare 环境变量时更新 DNS A 记录
+  - [x] **cron / Task Scheduler**：见 `docs/SCHEDULED_TASKS.md`（可复制示例）
+- [x] **订阅链接改用域名（薄切片）**
+  - `init`/`links --public-host …` 将主机名写入 `etc/public_host.txt`
+  - `tulipbridge links` 省略 `--public-host` 时：优先该文件，其次 `CLOUDFLARE_RECORD_NAME`（与 DDNS FQDN 一致即可）
+  - 分享 URI 的 server 字段即为上述主机名（域名或 IP，由用户选择）
 
-**交付标准（完整 Phase 4）：** IP 变化后 `tulipbridge update` 自动更新 Cloudflare DNS；订阅链接始终有效。**当前仓库：** 可先用手动 `links` + `update` 自查 IP/端口。
+**交付标准（完整 Phase 4）：** IP 变化后 `tulipbridge update` 自动更新 Cloudflare DNS；订阅链接始终有效。**当前仓库：** DDNS 域名可持久化并作为默认 `links` 主机；仍可用手动 `links --public-host …` 覆盖。
 
 ---
 
@@ -128,24 +130,27 @@
 
 > 目标：日常免登录、出问题能收到通知。
 
-**薄切片（已交付）：** `status` 汇总数据目录、PID 文件与进程存活、配置中的入站端口；对 **VLESS TCP** 做本机 `127.0.0.1` 连接探测；**UDP** 仅列出端口（不做协议级探测）。流量统计 / API / 公网 DNS 一致性仍为下文。
+**薄切片（已交付）：** `status` 汇总数据目录、PID 文件与进程存活、配置中的入站端口；对 **VLESS TCP** 做本机 `127.0.0.1` 连接探测；**UDP** 仅列出端口（不做协议级探测）；**WAN / DNS**：订阅主机 A 记录 vs 出口 IPv4；可选 **Clash API `/memory`**（`init --enable-stats-api`）；**`restart`**（基于现有 `etc/config.json` 拉起 sing-box）；**`rotate-logs`** / **`alert`**（webhook / Telegram / Bark）见下文。
 
 - [x] **`status` 命令（薄切片）**
   - [x] sing-box：无 PID / running / stale PID 文件
   - [x] 入站端口（从 `config.json`）；VLESS TCP 本机探测；UDP 配置说明
-  - [ ] 简要流量统计（若 sing-box API 可用）
-  - [ ] 公网 IP 与 DNS 记录一致性校验（可与 `update` 衔接）
-- [ ] **服务化安装**
-  - Windows：注册为 Windows Service 或生成 Task Scheduler XML
-  - Linux：生成 systemd unit 文件
-  - macOS：生成 launchd plist
-- [ ] **掉线通知（可选）**
-  - Telegram Bot / Bark / Webhook
-  - 检测 sing-box 意外退出或端口不可达时发送通知
-- [ ] **日志轮转**
-  - 按大小或天数自动轮转日志文件
+  - [x] 简要流量 / 内存提示（experimental `clash_api` + GET `/memory`，薄切片）
+  - [x] 公网 IP 与 DNS 记录一致性校验（`etc/public_host.txt` / `CLOUDFLARE_RECORD_NAME` + DNS）
+- [x] **服务化安装（文档示例）**
+  - [x] Windows：**示例** Task Scheduler XML（`docs/windows-tulipbridge-update.xml.example`）；注册为 Windows Service 仍为后续
+  - [x] Linux：**示例** systemd unit（`docs/tulipbridge.service.example`）；交互式生成器后续
+  - [x] macOS：**示例** launchd plist（`docs/com.tulipbridge.update.plist.example`）；交互式生成器后续
+- [x] **掉线通知（薄切片）**
+  - [x] Webhook：`TULIPBRIDGE_ALERT_WEBHOOK` + `tulipbridge alert`（stale PID）
+  - [x] Telegram：`TULIPBRIDGE_ALERT_TELEGRAM_BOT_TOKEN` + `TULIPBRIDGE_ALERT_TELEGRAM_CHAT_ID`（可与 webhook 同时配置）
+  - [x] Bark（薄切片：`TULIPBRIDGE_ALERT_BARK_KEY` / `TULIPBRIDGE_ALERT_BARK_URL` + `tulipbridge alert` GET）
+- [x] **日志轮转（薄切片）**
+  - [x] `tulipbridge rotate-logs`：按大小轮转 `logs/sing-box.log`（`TULIPBRIDGE_LOG_MAX_BYTES`）
+- [x] **进程重启（薄切片）**
+  - [x] `tulipbridge restart`：停止现有进程（若有）并以现有 `etc/config.json` 启动 sing-box（不改密钥与订阅；详见 `docs/AUTO_RESTART.md`）
 
-**交付标准**：`tulipbridge status` 输出一目了然的健康面板；sing-box 崩溃可自动重启并发通知。
+**交付标准**：`tulipbridge status` 输出一目了然的健康面板；进程崩溃可通过 **`tulipbridge alert`** 获知，并可 **`tulipbridge restart`** 或 **`init --force`**（改配置时）恢复进程；长期无人值守的 watchdog 仍由 systemd / 计划任务等承担（`docs/AUTO_RESTART.md`）。
 
 ---
 
@@ -153,24 +158,24 @@
 
 > 目标：项目可交付、可维护。
 
-- [ ] **测试**
-  - 单元测试（密钥生成、配置渲染、链接格式）
-  - 集成测试（mock sing-box 二进制的 init 流程）
-  - [x] CI（GitHub Actions：`ruff` + `pytest`，Ubuntu，Python 3.10–3.13）
-- [ ] **跨平台验证**
+- [x] **测试**
+  - [x] 单元测试（密钥生成、`export_share_bundle`、配置解析等；见 `tests/test_keygen.py` 等）
+  - [x] 集成测试（薄切片：`tests/test_init_integration.py`，mock `ensure_singbox` / `start_singbox`）
+  - [x] CI（GitHub Actions：`ruff` + `pytest`，Ubuntu / Windows / macOS — 见 `.github/workflows/ci.yml`）
+- [x] **跨平台验证**
   - [x] Windows：GitHub Actions **windows-latest** + Python 3.11（CI）
   - [x] Linux：GitHub Actions **ubuntu-latest** 矩阵（CI）
-  - macOS（可选）
-- [ ] **用户文档**
-  - 端到端快速开始指南
-  - 路由器端口映射图文说明
-  - Shadowrocket 导入步骤（截图）
+  - [x] macOS：**GitHub Actions macos-latest** + Python 3.11（CI）；本地亦可 `pip install -e '.[dev]'` + `pytest`
+- [x] **用户文档**
+  - [x] 端到端快速开始指南（薄切片：`docs/QUICKSTART.md`）
+  - [x] 路由器端口映射说明（薄切片：`docs/ROUTER_NAT.md`；配图截图可为后续）
+  - [x] Shadowrocket 导入步骤（薄切片：`docs/SHADOWROCKET_IMPORT.md`；截图可按 App 版本后续补充）
   - [x] 异步交接 / 中方最后联调（`docs/PREP_AND_CHINA_HANDOFF_ZH.md`）
-  - 常见问题 / 故障排查
-- [ ] **安全审查**
-  - 密钥文件权限（600 / 仅当前用户可读）
-  - API token 存储方式（环境变量 / 加密配置）
-  - 订阅链接防泄漏建议
+  - [x] 常见问题 / 故障排查（薄切片：`docs/FAQ.md`）
+- [x] **安全审查**
+  - [x] 文档摘要（薄切片：`docs/SECURITY.md` — 密钥、`cloudflare.json`、订阅与 webhook）
+  - [x] API token / 密钥存放：推荐环境变量与文件权限；加密配置库为后续可选（见 `docs/SECURITY.md`「Credentials」）
+  - [x] 订阅链接防泄漏建议（见 SECURITY / FAQ）
 
 **交付标准**：CI 绿灯，README 足够新用户从零开始跑通全流程。
 

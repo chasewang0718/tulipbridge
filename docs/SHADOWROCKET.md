@@ -16,6 +16,8 @@ If import fails after an update, re-export links with `tulipbridge links --publi
 
 ## Import methods
 
+Step-by-step (Shadowrocket UI): [SHADOWROCKET_IMPORT.md](SHADOWROCKET_IMPORT.md).
+
 1. **QR code** — Prefer scanning **`subscribe/qr-*.png`** on disk (terminal ASCII QR can be hard to scan on some Windows fonts).
 2. **Clipboard** — Copy a single line from `subscribe/uris-plain.txt` and use Shadowrocket’s “Import from clipboard”.
 3. **Subscription URL / Base64** — Many clients accept a **Base64-encoded list of URIs** (one URI per line before encoding). TulipBridge writes this to **`subscribe/subscription.txt`**. Import depends on the client: some expect a remote HTTPS URL, others let you paste Base64 or import the file via iCloud/files — follow Shadowrocket’s current UI for “subscribe” / “remote profile”.

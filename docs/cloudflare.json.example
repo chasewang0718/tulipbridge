@@ -1,0 +1,5 @@
+{
+  "api_token": "YOUR_CLOUDFLARE_API_TOKEN",
+  "zone_id": "YOUR_ZONE_ID",
+  "record_name": "vpn.example.com"
+}

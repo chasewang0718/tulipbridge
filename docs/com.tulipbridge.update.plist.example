@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<!--
+  LaunchAgent: periodic `tulipbridge update` (DDNS / hints).
+  1. Copy to ~/Library/LaunchAgents/com.tulipbridge.update.plist
+  2. Replace PATH placeholders: Python venv, TULIPBRIDGE_HOME, log paths.
+  3. launchctl load -w ~/Library/LaunchAgents/com.tulipbridge.update.plist
+  4. launchctl print gui/$(id -u)/com.tulipbridge.update
+
+  StartInterval: seconds between runs (900 = 15 minutes).
+  For calendar-based runs instead, remove StartInterval and add StartCalendarInterval dict (see man launchd.plist).
+-->
+<plist version="1.0">
+<dict>
+	<key>Label</key>
+	<string>com.tulipbridge.update</string>
+	<key>ProgramArguments</key>
+	<array>
+		<string>/Users/YOU/tulipbridge/.venv/bin/python</string>
+		<string>-m</string>
+		<string>tulipbridge</string>
+		<string>update</string>
+	</array>
+	<key>StartInterval</key>
+	<integer>900</integer>
+	<key>RunAtLoad</key>
+	<true/>
+	<key>EnvironmentVariables</key>
+	<dict>
+		<key>TULIPBRIDGE_HOME</key>
+		<string>/Users/YOU/.tulipbridge</string>
+	</dict>
+	<key>StandardOutPath</key>
+	<string>/Users/YOU/.tulipbridge/logs/launchd-update.log</string>
+	<key>StandardErrorPath</key>
+	<string>/Users/YOU/.tulipbridge/logs/launchd-update.err</string>
+</dict>
+</plist>

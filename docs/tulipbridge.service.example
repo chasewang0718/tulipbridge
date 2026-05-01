@@ -1,0 +1,24 @@
+# Example systemd user unit — TulipBridge helper commands (not sing-box itself).
+#
+# sing-box is normally started by `tulipbridge init` and tracked via PID file.
+# Use this unit only if you want cron-like periodic runs under systemd timers,
+# or wrap your own startup sequence.
+#
+# Copy to e.g. ~/.config/systemd/user/tulipbridge-update.service
+# Adjust User= / paths / Environment= for CLOUDFLARE_* or TULIPBRIDGE_HOME.
+
+[Unit]
+Description=TulipBridge periodic update (DDNS hint + optional Cloudflare)
+After=network-online.target
+
+[Service]
+Type=oneshot
+Environment=TULIPBRIDGE_HOME=/home/YOU/.tulipbridge
+# Optional; overrides file fields from etc/cloudflare.json when set:
+# Environment=CLOUDFLARE_API_TOKEN=...
+# Environment=CLOUDFLARE_ZONE_ID=...
+# Environment=CLOUDFLARE_RECORD_NAME=vpn.example.com
+ExecStart=/home/YOU/tulipbridge/.venv/bin/tulipbridge update
+
+[Install]
+WantedBy=default.target

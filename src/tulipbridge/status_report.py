@@ -5,9 +5,11 @@ from __future__ import annotations
 import json
 import socket
 
+from tulipbridge.clash_memory import clash_memory_status_lines
 from tulipbridge.config import parse_server_build_options_from_config
 from tulipbridge.paths import config_json_path, get_tulipbridge_home, pid_file_path
 from tulipbridge.process import is_running, read_pid
+from tulipbridge.wan_dns_check import build_wan_dns_lines
 
 
 def probe_tcp_local(port: int, *, timeout: float = 1.0) -> str:
@@ -46,6 +48,7 @@ def build_status_lines() -> list[str]:
     lines.append("")
     if not cfg_path.is_file():
         lines.append(f"No config ({cfg_path}). Run `tulipbridge init` first.")
+        lines.extend(build_wan_dns_lines())
         return lines
 
     try:
@@ -53,6 +56,7 @@ def build_status_lines() -> list[str]:
         opts = parse_server_build_options_from_config(cfg)
     except (json.JSONDecodeError, OSError, TypeError) as e:
         lines.append(f"Could not read config: {e}")
+        lines.extend(build_wan_dns_lines())
         return lines
 
     lines.append("Inbounds (from config.json):")
@@ -92,4 +96,7 @@ def build_status_lines() -> list[str]:
     if not opts.enable_hysteria2 and not opts.enable_tuic:
         lines.append("  (no UDP inbounds)")
 
+    lines.extend(clash_memory_status_lines(cfg))
+
+    lines.extend(build_wan_dns_lines())
     return lines

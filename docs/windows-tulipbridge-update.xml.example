@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Task Scheduler 2.0 task definition (import via GUI or schtasks).
+
+  1. Replace Command / Arguments / WorkingDirectory with your Python venv and data dir.
+  2. Task Scheduler (taskschd.msc): Action -> Import Task -> select this file.
+     Or from elevated cmd:
+       schtasks /Create /TN "TulipBridgeUpdate" /XML "%CD%\windows-tulipbridge-update.xml.example"
+     (rename/copy without .example first; fix paths inside XML.)
+
+  Runs every 15 minutes after the start boundary (adjust StartBoundary to local time).
+-->
+<Task version="1.2" xmlns="http://schemas.microsoft.com/windows/2004/02/mit/task">
+  <RegistrationInfo>
+    <Description>TulipBridge: tulipbridge update (DDNS / checks)</Description>
+  </RegistrationInfo>
+  <Triggers>
+    <TimeTrigger>
+      <Repetition>
+        <Interval>PT15M</Interval>
+        <StopAtDurationEnd>false</StopAtDurationEnd>
+      </Repetition>
+      <StartBoundary>2026-01-01T06:00:00</StartBoundary>
+      <Enabled>true</Enabled>
+    </TimeTrigger>
+  </Triggers>
+  <Principals>
+    <Principal id="Author">
+      <LogonType>InteractiveToken</LogonType>
+      <RunLevel>LeastPrivilege</RunLevel>
+    </Principal>
+  </Principals>
+  <Settings>
+    <MultipleInstancesPolicy>IgnoreNew</MultipleInstancesPolicy>
+    <DisallowStartIfOnBatteries>false</DisallowStartIfOnBatteries>
+    <StopIfGoingOnBatteries>false</StopIfGoingOnBatteries>
+    <AllowHardTerminate>true</AllowHardTerminate>
+    <StartWhenAvailable>true</StartWhenAvailable>
+    <Enabled>true</Enabled>
+    <Hidden>false</Hidden>
+    <ExecutionTimeLimit>PT72H</ExecutionTimeLimit>
+    <Priority>7</Priority>
+  </Settings>
+  <Actions Context="Author">
+    <Exec>
+      <Command>C:\path\to\.venv\Scripts\python.exe</Command>
+      <Arguments>-m tulipbridge --data-dir D:\tb-data update</Arguments>
+      <WorkingDirectory>D:\tb-data</WorkingDirectory>
+    </Exec>
+  </Actions>
+</Task>

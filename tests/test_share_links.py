@@ -11,6 +11,7 @@ from tulipbridge.share_links import (
     build_tuic_uri,
     build_vless_reality_uri,
     collect_share_uris,
+    export_share_bundle,
     format_uri_host,
     write_subscribe_bundle,
 )
@@ -66,6 +67,23 @@ def test_tuic_uri_encodes_userinfo() -> None:
     assert "allow_insecure=1" in uri
     assert "sni=tulipbridge.local" in uri
     assert "@198.51.100.1:8445?" in uri
+
+
+def test_export_share_bundle_writes_files(tmp_path: Path) -> None:
+    out = tmp_path / "sub"
+    result = export_share_bundle(
+        _SAMPLE_KEYS,
+        _SAMPLE_OPTS,
+        "198.51.100.1",
+        out_dir=out,
+        print_qr=False,
+        write_png=False,
+    )
+    assert result["plain_path"] is not None
+    assert result["subscription_path"] is not None
+    assert result["plain_path"].is_file()
+    assert result["subscription_path"].is_file()
+    assert len(result["uris"]) == 3
 
 
 def test_subscription_base64_matches_plain(tmp_path: Path) -> None:

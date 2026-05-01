@@ -9,7 +9,9 @@ import sys
 from pathlib import Path
 
 from tulipbridge import __version__
+from tulipbridge.alert_webhook import run_alert_once
 from tulipbridge.binary import BinaryDownloadError, ensure_singbox, singbox_version
+from tulipbridge.cloudflare_dns import cloudflare_update_lines, write_cloudflare_json_file
 from tulipbridge.config import (
     ConfigError,
     ServerBuildOptions,
@@ -17,7 +19,8 @@ from tulipbridge.config import (
     parse_server_build_options_from_config,
     write_config,
 )
-from tulipbridge.keygen import KeyGenerationError, ensure_keys, load_keys
+from tulipbridge.keygen import KeyGenerationError, ensure_keys, load_keys, save_keys
+from tulipbridge.log_rotate import rotate_lines
 from tulipbridge.network_public import fetch_public_ipv4, ipv4_lookup_note
 from tulipbridge.paths import (
     config_json_path,
@@ -28,6 +31,11 @@ from tulipbridge.paths import (
     subscribe_dir,
 )
 from tulipbridge.process import is_running, start_singbox, stop_singbox
+from tulipbridge.public_host import (
+    resolve_subscription_public_host,
+    subscription_refresh_hint_lines,
+    write_stored_public_host,
+)
 from tulipbridge.share_links import export_share_bundle
 from tulipbridge.status_report import build_status_lines
 
@@ -77,6 +85,8 @@ def _cmd_init(args: argparse.Namespace) -> int:
         tuic_udp_port=int(args.tuic_port),
         reality_sni=str(args.sni).strip(),
         tls_server_name=str(args.tls_sni).strip() or "tulipbridge.local",
+        enable_clash_api=getattr(args, "enable_clash_api", False),
+        clash_api_port=int(getattr(args, "clash_api_port", 9090)),
     )
 
     root = get_tulipbridge_home()
@@ -105,6 +115,13 @@ def _cmd_init(args: argparse.Namespace) -> int:
     except KeyGenerationError as e:
         print(f"Error: {e}", file=sys.stderr)
         return 1
+
+    if getattr(args, "enable_clash_api", False):
+        import secrets
+
+        if not str(keys.get("clash_api_secret", "")).strip():
+            keys["clash_api_secret"] = secrets.token_hex(16)
+            save_keys(keys)
 
     print("[4/7] Writing config.json...")
     try:
@@ -208,6 +225,7 @@ def _cmd_init(args: argparse.Namespace) -> int:
             print_qr=True,
             write_png=True,
         )
+        write_stored_public_host(public_host)
         _print_share_export_summary(result)
     else:
         print()
@@ -246,8 +264,17 @@ def _cmd_links(args: argparse.Namespace) -> int:
         return 1
 
     out_dir = args.output_dir if args.output_dir is not None else subscribe_dir()
-    host = str(args.public_host).strip()
+    host = resolve_subscription_public_host(args.public_host)
+    if not host:
+        print(
+            "Error: no public host — pass --public-host WAN_IP_OR_DOMAIN, "
+            "or set CLOUDFLARE_RECORD_NAME (same FQDN as DDNS), "
+            "or run init/links once with --public-host.",
+            file=sys.stderr,
+        )
+        return 1
     print(f"Writing subscription under {out_dir.resolve()} ...")
+    print(f"Using server address in URIs: {host}")
     result = export_share_bundle(
         keys,
         opts,
@@ -256,12 +283,13 @@ def _cmd_links(args: argparse.Namespace) -> int:
         print_qr=True,
         write_png=True,
     )
+    write_stored_public_host(host)
     _print_share_export_summary(result)
     return 0
 
 
 def _cmd_update(_args: argparse.Namespace) -> int:
-    """Public IPv4 hint + port summary; full Cloudflare DDNS is Phase 4 later."""
+    """Public IPv4 hint + port summary + optional Cloudflare A-record update (env)."""
     root = get_tulipbridge_home()
     print(f"Data directory: {root.resolve()}")
     print()
@@ -311,11 +339,11 @@ def _cmd_update(_args: argparse.Namespace) -> int:
                 print("  (no enabled inbounds)")
 
     print()
-    print(
-        "Automatic DDNS (Cloudflare) is not implemented yet. "
-        "After your IP or hostname changes, run:\n"
-        "  tulipbridge links --public-host YOUR_HOST"
-    )
+    for line in cloudflare_update_lines(pub):
+        print(line)
+    print()
+    for line in subscription_refresh_hint_lines():
+        print(line)
     return 0
 
 
@@ -323,6 +351,47 @@ def _cmd_status(_args: argparse.Namespace) -> int:
     for line in build_status_lines():
         print(line)
     return 0
+
+
+def _cmd_cloudflare_write_config(args: argparse.Namespace) -> int:
+    path = write_cloudflare_json_file(args.token, args.zone_id, args.record_name)
+    print(f"Wrote {path.resolve()}")
+    return 0
+
+
+def _cmd_rotate_logs(_args: argparse.Namespace) -> int:
+    for line in rotate_lines():
+        print(line)
+    return 0
+
+
+def _cmd_restart(_args: argparse.Namespace) -> int:
+    """Stop sing-box if running, then start from existing ``etc/config.json``."""
+    cfg_path = config_json_path()
+    if not cfg_path.is_file():
+        print(
+            f"Error: missing {cfg_path}. Run `tulipbridge init` first.",
+            file=sys.stderr,
+        )
+        return 1
+
+    if is_running():
+        print("Stopping sing-box ...")
+        stop_singbox()
+
+    print("Starting sing-box ...")
+    try:
+        pid = start_singbox(cfg_path)
+    except RuntimeError as e:
+        print(f"Error: {e}", file=sys.stderr)
+        return 1
+
+    print(f"sing-box restarted (PID {pid}).")
+    return 0
+
+
+def _cmd_alert(_args: argparse.Namespace) -> int:
+    return run_alert_once()
 
 
 def _apply_data_root(ns: argparse.Namespace, parser: argparse.ArgumentParser) -> None:
@@ -357,7 +426,9 @@ def main(argv: list[str] | None = None) -> int:
         action="store_true",
         help=(
             "Portable mode: use ./tulipbridge-data under the current working directory "
-            "(good for USB / self-contained folders). Overrides TULIPBRIDGE_HOME."
+            "(good for USB / self-contained folders). Overrides TULIPBRIDGE_HOME. "
+            "If that folder already exists, it is also used by default without this flag "
+            "(see get_tulipbridge_home)."
         ),
     )
     parser.add_argument(
@@ -441,8 +512,26 @@ def main(argv: list[str] | None = None) -> int:
         metavar="HOST",
         help=(
             "Public WAN hostname or IP for share links and subscribe/*. "
+            "Saved to etc/public_host.txt for later `tulipbridge links` without this flag. "
             "If omitted, init skips subscription files and QR; run `tulipbridge links` later."
         ),
+    )
+    p_init.add_argument(
+        "--enable-stats-api",
+        dest="enable_clash_api",
+        action=argparse.BooleanOptionalAction,
+        default=False,
+        help=(
+            "Enable sing-box experimental.clash_api on 127.0.0.1 for `status` memory hint "
+            "(default: off)."
+        ),
+    )
+    p_init.add_argument(
+        "--clash-api-port",
+        type=int,
+        default=9090,
+        metavar="PORT",
+        help="Port for Clash API when --enable-stats-api (default: 9090).",
     )
     p_init.set_defaults(func=_cmd_init)
 
@@ -452,9 +541,13 @@ def main(argv: list[str] | None = None) -> int:
     )
     p_links.add_argument(
         "--public-host",
-        required=True,
+        default=None,
         metavar="HOST",
-        help="Public WAN hostname or IP embedded in client URIs.",
+        help=(
+            "Public WAN hostname or IP in client URIs. "
+            "If omitted: uses etc/public_host.txt (last init/links) or "
+            "CLOUDFLARE_RECORD_NAME for DDNS."
+        ),
     )
     p_links.add_argument(
         "--output-dir",
@@ -468,8 +561,8 @@ def main(argv: list[str] | None = None) -> int:
     p_up = sub.add_parser(
         "update",
         help=(
-            "Show public IPv4, CGNAT hint, listen ports from config; "
-            "full Cloudflare DDNS not implemented yet."
+            "Show public IPv4, CGNAT hint, listen ports; optional Cloudflare A record "
+            "if CLOUDFLARE_* env vars are set."
         ),
     )
     p_up.set_defaults(func=_cmd_update)
@@ -479,6 +572,60 @@ def main(argv: list[str] | None = None) -> int:
         help="Show data dir, sing-box PID state, config ports, local TCP probe for VLESS.",
     )
     p_st.set_defaults(func=_cmd_status)
+
+    p_cf = sub.add_parser(
+        "cloudflare-write-config",
+        help=(
+            "Write etc/cloudflare.json (POSIX mode 600). "
+            "Environment variables still override each field when set."
+        ),
+    )
+    p_cf.add_argument(
+        "--token",
+        required=True,
+        metavar="TOKEN",
+        help="Cloudflare API token (Zone DNS Edit).",
+    )
+    p_cf.add_argument(
+        "--zone-id",
+        required=True,
+        dest="zone_id",
+        metavar="ID",
+        help="Cloudflare zone id.",
+    )
+    p_cf.add_argument(
+        "--record-name",
+        required=True,
+        dest="record_name",
+        metavar="FQDN",
+        help="FQDN of the A record to update (e.g. vpn.example.com).",
+    )
+    p_cf.set_defaults(func=_cmd_cloudflare_write_config)
+
+    p_rot = sub.add_parser(
+        "rotate-logs",
+        help="Rotate logs/sing-box.log when over size limit (see TULIPBRIDGE_LOG_MAX_BYTES).",
+    )
+    p_rot.set_defaults(func=_cmd_rotate_logs)
+
+    p_restart = sub.add_parser(
+        "restart",
+        help=(
+            "Stop sing-box if running, then start from existing etc/config.json "
+            "(does not regenerate keys or subscribe files; use `init --force` to rewrite config)."
+        ),
+    )
+    p_restart.set_defaults(func=_cmd_restart)
+
+    p_alert = sub.add_parser(
+        "alert",
+        help=(
+            "If sing-box PID is stale, notify via TULIPBRIDGE_ALERT_WEBHOOK and/or "
+            "Telegram (TULIPBRIDGE_ALERT_TELEGRAM_BOT_TOKEN + TULIPBRIDGE_ALERT_TELEGRAM_CHAT_ID) "
+            "and/or Bark (TULIPBRIDGE_ALERT_BARK_KEY or TULIPBRIDGE_ALERT_BARK_URL)."
+        ),
+    )
+    p_alert.set_defaults(func=_cmd_alert)
 
     ns = parser.parse_args(argv)
     _apply_data_root(ns, parser)

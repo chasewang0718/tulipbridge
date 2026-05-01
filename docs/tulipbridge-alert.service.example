@@ -1,0 +1,17 @@
+# systemd oneshot — `tulipbridge alert` (pair with tulipbridge-alert.timer.example).
+#
+# Copy to e.g. ~/.config/systemd/user/tulipbridge-alert.service
+# systemctl --user daemon-reload && systemctl --user enable --now tulipbridge-alert.timer
+
+[Unit]
+Description=TulipBridge stale-PID alert (webhook / Telegram / Bark)
+After=network-online.target
+
+[Service]
+Type=oneshot
+Environment=TULIPBRIDGE_HOME=/home/YOU/.tulipbridge
+# Export secrets here or via EnvironmentFile=/home/YOU/.config/tulipbridge-alert.env (chmod 600):
+# Environment=TULIPBRIDGE_ALERT_WEBHOOK=https://...
+# Environment=TULIPBRIDGE_ALERT_TELEGRAM_BOT_TOKEN=...
+# Environment=TULIPBRIDGE_ALERT_TELEGRAM_CHAT_ID=...
+ExecStart=/home/YOU/tulipbridge/.venv/bin/tulipbridge alert

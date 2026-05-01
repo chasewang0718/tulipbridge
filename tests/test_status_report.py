@@ -19,6 +19,20 @@ def isolated_home(tmp_path: Path):
     set_data_root(None)
 
 
+@pytest.fixture(autouse=True)
+def _stub_wan_dns(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Avoid real HTTPS/DNS when exercising status_report."""
+    monkeypatch.setattr(
+        "tulipbridge.wan_dns_check.resolve_subscription_public_host",
+        lambda _: None,
+    )
+    monkeypatch.setattr("tulipbridge.wan_dns_check.fetch_public_ipv4", lambda: None)
+    monkeypatch.setattr(
+        "tulipbridge.status_report.clash_memory_status_lines",
+        lambda _cfg: [],
+    )
+
+
 def test_build_status_lines_no_config_no_pid(isolated_home: Path) -> None:
     lines = build_status_lines()
     text = "\n".join(lines)

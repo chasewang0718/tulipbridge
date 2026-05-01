@@ -2,7 +2,7 @@
 
 适用场景：你在**荷兰或本机**部署 TulipBridge，中国家属或同事需要用手机 **Shadowrocket** 连接，但双方**不便实时语音联调**。本文把「你这边能独立完成的事」和「必须中方配合的最后一步」分开写。
 
-端到端命令步骤仍以 [HANDS_ON_WINDOWS_ZH.md](HANDS_ON_WINDOWS_ZH.md) 为准；客户端版本提示见 [SHADOWROCKET.md](SHADOWROCKET.md)。
+端到端命令步骤仍以 [HANDS_ON_WINDOWS_ZH.md](HANDS_ON_WINDOWS_ZH.md) 为准；客户端版本提示见 [SHADOWROCKET.md](SHADOWROCKET.md)。下列 **勾选项须在你自己的服务器或电脑上实际操作** 完成，仓库与 CI 无法代执行。
 
 ---
 
@@ -15,12 +15,14 @@
 - [ ] 已在服务器或本机完成 **`tulipbridge init`**（或 **`--portable`**），`etc/config.json`、`etc/keys.json` 存在，`sing-box` 能通过 **`sing-box check`**（初始化流程里已包含）。
 - [ ] **`tulipbridge status`** 显示 **sing-box running**（或你认可的在跑状态），且 **VLESS 对应 TCP 端口**在本机探测为 **`listen_ok`**（同一文档 Phase 5 行为）。
 - [ ] **`tulipbridge update`** 能看到 **出口公网 IPv4**，并与路由器管理页里的 **WAN IP** 对照：若长期不一致，先处理 **CGNAT / 端口映射 / 双 NAT**，再让中方测。
+- [ ] 已掌握 **公网 IP / DDNS 变化后** 执行 **`tulipbridge update`** 与 **`tulipbridge links`**（说明见本文第四节），并在发给中方前 **刷新 `subscribe/`**。
 
 ### 2. 网络与防火墙
 
 - [ ] **Windows 防火墙**（或 Linux 防火墙）已对你在 **`init` 里使用的端口**放行 **入站**（TCP VLESS + UDP Hy2/TUIC）。参见手把手文档 **第七步**。
 - [ ] **路由器**已将 **WAN → 这台机器的 TCP/UDP 端口**映射一致（从外网访问时必填）。手把手文档 **「和手机不在同一 WiFi」** 一节。
 - [ ] 记下未来将写入分享链接的 **`--public-host`**：**公网 IP** 或 **DDNS 域名**（与中方手机上看到的「服务器地址」必须一致）。
+- [ ] （推荐）已按 [PORT_PROBE.md](PORT_PROBE.md)（分步说明：[PORT_PROBE_STEP_BY_STEP_ZH.md](PORT_PROBE_STEP_BY_STEP_ZH.md)）用 **自备 VPS 或其它外网主机** 对映射端口做过 **TCP/UDP 可达性** 抽查（本机 `listen_ok` 不能代替 WAN 路径）。
 
 ### 3. 订阅与二维码（无中方也可生成）
 
@@ -43,7 +45,7 @@
 
 | 内容 | 说明 |
 |------|------|
-| **`qr-vless-reality.png`**（或对应协议的 PNG） | 优先扫码导入 |
+| **`qr-vless-reality.png`**（或对应协议的 PNG） | 优先扫码导入；分步界面说明见 [SHADOWROCKET_IMPORT.md](SHADOWROCKET_IMPORT.md) |
 | **一行 `vless://…`** | 可从 **`uris-plain.txt`** 复制，便于「从剪贴板导入」 |
 | **Shadowrocket 版本提示** | 摘抄自 [SHADOWROCKET.md](SHADOWROCKET.md) 的建议最低版本（以 App Store 为准） |
 | **端口与协议顺序说明（可选）** | 建议先试 **VLESS（TCP）**，再试 **UDP** 线路 |

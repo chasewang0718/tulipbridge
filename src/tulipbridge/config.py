@@ -32,6 +32,12 @@ class ServerBuildOptions:
     tls_server_name: str = "tulipbridge.local"
     """TLS server_name on Hy2/TUIC inbounds (must match self-signed cert CN)."""
 
+    enable_clash_api: bool = False
+    """When True, embed sing-box experimental.clash_api on loopback for stats endpoints."""
+
+    clash_api_port: int = 9090
+    """Listen port for clash_api external_controller (127.0.0.1)."""
+
 
 class ConfigError(ValueError):
     """Invalid port combination or missing keys for enabled protocols."""
@@ -168,7 +174,7 @@ def build_config(keys: dict[str, Any], opts: ServerBuildOptions) -> dict[str, An
     if not inbounds:
         raise ConfigError("At least one inbound protocol must be enabled.")
 
-    return {
+    cfg: dict[str, Any] = {
         "log": {
             "level": "info",
             "output": str(log_file),
@@ -180,6 +186,17 @@ def build_config(keys: dict[str, Any], opts: ServerBuildOptions) -> dict[str, An
             {"type": "block", "tag": "block"},
         ],
     }
+
+    if opts.enable_clash_api:
+        secret = str(keys.get("clash_api_secret", "")).strip()
+        cfg["experimental"] = {
+            "clash_api": {
+                "external_controller": f"127.0.0.1:{opts.clash_api_port}",
+                "secret": secret,
+            }
+        }
+
+    return cfg
 
 
 def write_config(config: dict[str, Any]) -> Path:

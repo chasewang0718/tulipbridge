@@ -1,0 +1,17 @@
+# systemd timer — run `tulipbridge alert` every 10 minutes.
+#
+# Install tulipbridge-alert.service + this file under ~/.config/systemd/user/
+# systemctl --user daemon-reload
+# systemctl --user enable --now tulipbridge-alert.timer
+# systemctl --user list-timers
+
+[Unit]
+Description=Timer for TulipBridge alert
+
+[Timer]
+OnBootSec=2min
+OnUnitActiveSec=10min
+AccuracySec=1min
+
+[Install]
+WantedBy=timers.target

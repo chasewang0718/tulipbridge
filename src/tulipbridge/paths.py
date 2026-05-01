@@ -32,13 +32,18 @@ def get_tulipbridge_home() -> Path:
     Precedence:
     1. ``set_data_root()`` (from ``--data-dir`` / ``--portable``)
     2. Environment variable ``TULIPBRIDGE_HOME``
-    3. ``~/.tulipbridge``
+    3. If the current working directory contains a ``tulipbridge-data/`` folder,
+       use it (keeps a checkout self-contained without passing ``--portable`` each time).
+    4. ``~/.tulipbridge``
     """
     if _override_root is not None:
         return _override_root
     env = os.environ.get(_ENV_VAR, "").strip()
     if env:
         return Path(env).expanduser().resolve()
+    cwd_local = Path.cwd() / _PORTABLE_DIRNAME
+    if cwd_local.is_dir():
+        return cwd_local.resolve()
     return _DEFAULT_RELATIVE.resolve()
 
 
