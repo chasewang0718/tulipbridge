@@ -31,7 +31,7 @@ dev = ["pytest>=8", "ruff>=0.8"]
 tulipbridge = "tulipbridge.cli:main"
 
 [project.urls]
-Homepage = "https://github.com/example/tulipbridge"
+Homepage = "https://github.com/chasewang0718/tulipbridge"
 
 [tool.setuptools.packages.find]
 where = ["src"]
