@@ -156,7 +156,7 @@
 - [ ] **测试**
   - 单元测试（密钥生成、配置渲染、链接格式）
   - 集成测试（mock sing-box 二进制的 init 流程）
-  - CI（GitHub Actions：lint + test，多 Python 版本）
+  - [x] CI（GitHub Actions：`ruff` + `pytest`，Ubuntu，Python 3.10–3.13）
 - [ ] **跨平台验证**
   - Windows（主开发环境）
   - Linux（常见部署环境）

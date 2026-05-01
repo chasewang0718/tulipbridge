@@ -1,5 +1,7 @@
 # TulipBridge
 
+[![CI](https://github.com/chasewang0718/tulipbridge/actions/workflows/ci.yml/badge.svg)](https://github.com/chasewang0718/tulipbridge/actions/workflows/ci.yml)
+
 Python CLI to deploy and manage **sing-box** on a home server (e.g. Netherlands): VLESS-Reality, Hysteria 2, and TUIC v5, with QR/subscription output for clients such as Shadowrocket.
 
 Design goals, protocol choices, network prerequisites, and CLI scope: see [ROADMAP.md](ROADMAP.md).
@@ -38,6 +40,8 @@ tulipbridge --help
 ## Requirements
 
 Python 3.10+.
+
+**CI:** on every push/PR to `main`, [GitHub Actions](https://github.com/chasewang0718/tulipbridge/actions/workflows/ci.yml) runs **ruff** and **pytest** on Ubuntu against Python **3.10–3.13**.
 
 ## Portable data directory
 
