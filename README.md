@@ -21,7 +21,9 @@ Global options must precede the subcommand: `python -m tulipbridge --portable in
 
 **Import on phone:** see [docs/SHADOWROCKET.md](docs/SHADOWROCKET.md) for suggested Shadowrocket versions and import tips (clipboard, PNG QR preferred over terminal QR on Windows).
 
-`update` and `status` are still placeholders (later roadmap phases).
+**Phase 4 (thin slice):** `tulipbridge update` prints **data directory**, best-effort **public IPv4** (HTTPS reflectors), a **CGNAT / router WAN check** hint, and **listen ports** from `config.json`. Automatic **Cloudflare DDNS** is not implemented yet; use `tulipbridge links --public-host …` after IP or hostname changes.
+
+`status` is still a placeholder (Phase 5).
 
 ## Install (editable)
 

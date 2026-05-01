@@ -103,22 +103,24 @@
 
 > 目标：`tulipbridge update` 能自动刷新 DNS 记录和订阅内容。
 
-- [ ] **网络前置检查**
-  - CGNAT 检测（WAN vs ifconfig.me 比对）
-  - 指定端口可达性测试（TCP/UDP）
-  - 不通过时给出明确提示与建议
+**薄切片（已交付）：** `update` 拉取公网 IPv4（HTTPS）、提示与路由器 WAN 对比（CGNAT / 双层路由）、列出 `config.json` 监听端口；Cloudflare 与自动 DNS 仍在下文。
+
+- [x] **网络前置检查（薄切片）**
+  - [x] 公网 IPv4 查询（api.ipify.org / ifconfig.me 回退）
+  - [x] CGNAT / 路由提示（人工对比路由器 WAN 与出口 IP）
+  - [ ] 指定端口从外网可达性探测（需外部探针或路由器配合，后续）
 - [ ] **Cloudflare DDNS**
   - 通过 Cloudflare API 更新 A 记录
   - 短 TTL（60–120s）
   - 配置存储：zone id、API token、域名（首次 init 时写入）
-- [ ] **`update` 命令实现**
-  - 检测公网 IP 变化 → 更新 DNS
-  - 重新渲染订阅链接（域名不变，IP 变了链接不需要改；但若端口或密钥变了需刷新）
-  - 可接入 cron / Task Scheduler 定时执行
+- [x] **`update` 命令（薄切片）**
+  - [x] 展示当前出口 IPv4、配置中的监听端口、CGNAT 提示；提醒 `links --public-host` 刷新订阅
+  - [ ] 检测公网 IP 变化 → 更新 DNS（依赖 Cloudflare 实现）
+  - [ ] 可接入 cron / Task Scheduler 定时执行
 - [ ] **订阅链接改用域名**
   - 分享链接中的 server 字段使用 DDNS 域名而非 IP
 
-**交付标准**：IP 变化后 `tulipbridge update` 自动更新 Cloudflare DNS；订阅链接始终有效。
+**交付标准（完整 Phase 4）：** IP 变化后 `tulipbridge update` 自动更新 Cloudflare DNS；订阅链接始终有效。**当前仓库：** 可先用手动 `links` + `update` 自查 IP/端口。
 
 ---
 

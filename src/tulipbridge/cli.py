@@ -18,6 +18,7 @@ from tulipbridge.config import (
     write_config,
 )
 from tulipbridge.keygen import KeyGenerationError, ensure_keys, load_keys
+from tulipbridge.network_public import fetch_public_ipv4, ipv4_lookup_note
 from tulipbridge.paths import (
     config_json_path,
     ensure_dirs,
@@ -259,7 +260,61 @@ def _cmd_links(args: argparse.Namespace) -> int:
 
 
 def _cmd_update(_args: argparse.Namespace) -> int:
-    print("update: not implemented yet — DDNS / subscription refresh.")
+    """Public IPv4 hint + port summary; full Cloudflare DDNS is Phase 4 later."""
+    root = get_tulipbridge_home()
+    print(f"Data directory: {root.resolve()}")
+    print()
+
+    pub = fetch_public_ipv4()
+    if pub:
+        print(f"Outbound IPv4 (HTTPS lookup): {pub}")
+        note = ipv4_lookup_note(pub)
+        if note:
+            print(f"  {note}")
+    else:
+        print(
+            "Could not determine public IPv4 "
+            "(reflectors unreachable, timed out, or no IPv4-only path)."
+        )
+
+    print()
+    print(
+        "CGNAT check: compare the IPv4 above with your router admin \"WAN\" address. "
+        "If they differ, you may be behind carrier-grade NAT, double NAT, "
+        "or need WAN port forwarding to this machine."
+    )
+    print()
+
+    cfg_path = config_json_path()
+    if not cfg_path.is_file():
+        print(f"No config yet ({cfg_path}). Run `tulipbridge init` first.")
+    else:
+        try:
+            cfg = json.loads(cfg_path.read_text(encoding="utf-8"))
+            opts = parse_server_build_options_from_config(cfg)
+        except (json.JSONDecodeError, OSError) as e:
+            print(f"Could not read config: {e}")
+        else:
+            print("Listen ports from config.json:")
+            lines = 0
+            if opts.enable_vless:
+                print(f"  VLESS-Reality (TCP): {opts.vless_tcp_port}")
+                lines += 1
+            if opts.enable_hysteria2:
+                print(f"  Hysteria 2 (UDP):    {opts.hysteria2_udp_port}")
+                lines += 1
+            if opts.enable_tuic:
+                print(f"  TUIC (UDP):          {opts.tuic_udp_port}")
+                lines += 1
+            if lines == 0:
+                print("  (no enabled inbounds)")
+
+    print()
+    print(
+        "Automatic DDNS (Cloudflare) is not implemented yet. "
+        "After your IP or hostname changes, run:\n"
+        "  tulipbridge links --public-host YOUR_HOST"
+    )
     return 0
 
 
@@ -408,7 +463,13 @@ def main(argv: list[str] | None = None) -> int:
     )
     p_links.set_defaults(func=_cmd_links)
 
-    p_up = sub.add_parser("update", help="Refresh DDNS / links after IP or cert changes.")
+    p_up = sub.add_parser(
+        "update",
+        help=(
+            "Show public IPv4, CGNAT hint, listen ports from config; "
+            "full Cloudflare DDNS not implemented yet."
+        ),
+    )
     p_up.set_defaults(func=_cmd_update)
 
     p_st = sub.add_parser("status", help="Show sing-box and port health.")
