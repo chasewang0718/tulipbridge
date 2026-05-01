@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import sys
 from pathlib import Path
 
 import pytest
@@ -58,6 +59,14 @@ def test_three_inbounds_when_all_enabled(isolated_home: Path) -> None:
     cfg = build_config(keys, opts)
     types = [i["type"] for i in cfg["inbounds"]]
     assert types == ["vless", "hysteria2", "tuic"]
+
+
+def test_listen_address_matches_platform(isolated_home: Path) -> None:
+    """Windows: avoid [::]+0.0.0.0 dual bind sing-box fatal; POSIX keeps dual-stack ::."""
+    keys = _full_keys(isolated_home)
+    cfg = build_config(keys, ServerBuildOptions())
+    expected = "0.0.0.0" if sys.platform == "win32" else "::"
+    assert all(ib["listen"] == expected for ib in cfg["inbounds"])
 
 
 def test_udp_only_two_inbounds(isolated_home: Path) -> None:

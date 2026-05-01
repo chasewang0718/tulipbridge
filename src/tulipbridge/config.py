@@ -3,11 +3,17 @@
 from __future__ import annotations
 
 import json
+import sys
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
 from tulipbridge.paths import config_json_path, etc_dir, singbox_log_path
+
+
+def _inbound_listen_address() -> str:
+    """Use IPv4-only listen on Windows (sing-box dual [::]/0.0.0.0 bind often fails there)."""
+    return "0.0.0.0" if sys.platform == "win32" else "::"
 
 
 @dataclass(frozen=True)
@@ -85,6 +91,7 @@ def build_config(keys: dict[str, Any], opts: ServerBuildOptions) -> dict[str, An
     tls_name = opts.tls_server_name.strip()
 
     log_file = singbox_log_path()
+    listen_addr = _inbound_listen_address()
     inbounds: list[dict[str, Any]] = []
 
     if opts.enable_vless:
@@ -92,7 +99,7 @@ def build_config(keys: dict[str, Any], opts: ServerBuildOptions) -> dict[str, An
             {
                 "type": "vless",
                 "tag": "vless-reality",
-                "listen": "::",
+                "listen": listen_addr,
                 "listen_port": opts.vless_tcp_port,
                 "users": [
                     {
@@ -120,7 +127,7 @@ def build_config(keys: dict[str, Any], opts: ServerBuildOptions) -> dict[str, An
             {
                 "type": "hysteria2",
                 "tag": "hysteria2-in",
-                "listen": "::",
+                "listen": listen_addr,
                 "listen_port": opts.hysteria2_udp_port,
                 "users": [
                     {
@@ -141,7 +148,7 @@ def build_config(keys: dict[str, Any], opts: ServerBuildOptions) -> dict[str, An
             {
                 "type": "tuic",
                 "tag": "tuic-in",
-                "listen": "::",
+                "listen": listen_addr,
                 "listen_port": opts.tuic_udp_port,
                 "users": [
                     {
