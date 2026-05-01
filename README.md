@@ -4,6 +4,8 @@ Python CLI to deploy and manage **sing-box** on a home server (e.g. Netherlands)
 
 Design goals, protocol choices, network prerequisites, and CLI scope: see [ROADMAP.md](ROADMAP.md).
 
+**New to this repo / want copy-paste steps on Windows?** See [docs/HANDS_ON_WINDOWS_ZH.md](docs/HANDS_ON_WINDOWS_ZH.md)（手把手，一步一步）.
+
 ## Status
 
 **Phase 1–3:** `tulipbridge init` installs sing-box, manages keys under the data directory (`~/.tulipbridge` by default or `--data-dir` / `--portable`), writes `config.json`, runs `sing-box check`, and starts sing-box.
