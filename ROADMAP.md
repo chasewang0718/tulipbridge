@@ -128,11 +128,13 @@
 
 > 目标：日常免登录、出问题能收到通知。
 
-- [ ] **`status` 命令**
-  - sing-box 进程状态（running / stopped / crashed）
-  - 各入站端口监听检测
-  - 简要流量统计（若 sing-box API 可用）
-  - 公网 IP 与 DNS 记录一致性校验
+**薄切片（已交付）：** `status` 汇总数据目录、PID 文件与进程存活、配置中的入站端口；对 **VLESS TCP** 做本机 `127.0.0.1` 连接探测；**UDP** 仅列出端口（不做协议级探测）。流量统计 / API / 公网 DNS 一致性仍为下文。
+
+- [x] **`status` 命令（薄切片）**
+  - [x] sing-box：无 PID / running / stale PID 文件
+  - [x] 入站端口（从 `config.json`）；VLESS TCP 本机探测；UDP 配置说明
+  - [ ] 简要流量统计（若 sing-box API 可用）
+  - [ ] 公网 IP 与 DNS 记录一致性校验（可与 `update` 衔接）
 - [ ] **服务化安装**
   - Windows：注册为 Windows Service 或生成 Task Scheduler XML
   - Linux：生成 systemd unit 文件

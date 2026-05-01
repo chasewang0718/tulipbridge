@@ -23,7 +23,7 @@ Global options must precede the subcommand: `python -m tulipbridge --portable in
 
 **Phase 4 (thin slice):** `tulipbridge update` prints **data directory**, best-effort **public IPv4** (HTTPS reflectors), a **CGNAT / router WAN check** hint, and **listen ports** from `config.json`. Automatic **Cloudflare DDNS** is not implemented yet; use `tulipbridge links --public-host …` after IP or hostname changes.
 
-`status` is still a placeholder (Phase 5).
+**Phase 5 (thin slice):** `tulipbridge status` prints **data directory**, **sing-box PID / running vs stale vs stopped**, **inbound ports** from `config.json`, and a **localhost TCP probe** for VLESS; UDP inbounds are listed but not probed (stdlib limitation).
 
 ## Install (editable)
 

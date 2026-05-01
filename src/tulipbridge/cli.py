@@ -29,6 +29,7 @@ from tulipbridge.paths import (
 )
 from tulipbridge.process import is_running, start_singbox, stop_singbox
 from tulipbridge.share_links import export_share_bundle
+from tulipbridge.status_report import build_status_lines
 
 
 def _print_share_export_summary(result: dict) -> None:
@@ -319,7 +320,8 @@ def _cmd_update(_args: argparse.Namespace) -> int:
 
 
 def _cmd_status(_args: argparse.Namespace) -> int:
-    print("status: not implemented yet — sing-box health & ports.")
+    for line in build_status_lines():
+        print(line)
     return 0
 
 
@@ -472,7 +474,10 @@ def main(argv: list[str] | None = None) -> int:
     )
     p_up.set_defaults(func=_cmd_update)
 
-    p_st = sub.add_parser("status", help="Show sing-box and port health.")
+    p_st = sub.add_parser(
+        "status",
+        help="Show data dir, sing-box PID state, config ports, local TCP probe for VLESS.",
+    )
     p_st.set_defaults(func=_cmd_status)
 
     ns = parser.parse_args(argv)
