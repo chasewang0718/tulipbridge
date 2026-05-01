@@ -4,6 +4,8 @@
 
 如果你已经会命令行，可以直接看 [README.md](../README.md)；这里写得更细。
 
+**人在国内的家属不能和你实时联调？** 你可先在荷兰/本机按本文做完，再把订阅文件发给对方；完整分工见 [PREP_AND_CHINA_HANDOFF_ZH.md](PREP_AND_CHINA_HANDOFF_ZH.md)。
+
 ### 进度核对（第一次跑通）
 
 请你**从上到下**，做完一项在心里打个勾：
@@ -238,6 +240,12 @@ python -m tulipbridge --portable init --port 8443 --hy2-port 8446 --tuic-port 84
 3. 先测 **VLESS（TCP）** 能否上网；再必要时试 UDP 线路。
 
 更细的客户端说明见：[SHADOWROCKET.md](SHADOWROCKET.md)。
+
+---
+
+## 中方在国内、不方便实时联调时
+
+你这边尽量完成：**防火墙、路由器映射、`status` / `update`、生成 `subscribe/`**。对方只需在最后一步用 Shadowrocket 扫码或导入链接；具体要求与打包清单见 [PREP_AND_CHINA_HANDOFF_ZH.md](PREP_AND_CHINA_HANDOFF_ZH.md)。
 
 ---
 

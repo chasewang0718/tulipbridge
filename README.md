@@ -8,6 +8,8 @@ Design goals, protocol choices, network prerequisites, and CLI scope: see [ROADM
 
 **New to this repo / want copy-paste steps on Windows?** See [docs/HANDS_ON_WINDOWS_ZH.md](docs/HANDS_ON_WINDOWS_ZH.md)（手把手，一步一步）.
 
+**China client / async handoff:** if you prep the server in NL first and only test Shadowrocket from China at the end, read [docs/PREP_AND_CHINA_HANDOFF_ZH.md](docs/PREP_AND_CHINA_HANDOFF_ZH.md).
+
 ## Status
 
 **Phase 1–3:** `tulipbridge init` installs sing-box, manages keys under the data directory (`~/.tulipbridge` by default or `--data-dir` / `--portable`), writes `config.json`, runs `sing-box check`, and starts sing-box.
@@ -41,7 +43,7 @@ tulipbridge --help
 
 Python 3.10+.
 
-**CI:** on every push/PR to `main`, [GitHub Actions](https://github.com/chasewang0718/tulipbridge/actions/workflows/ci.yml) runs **ruff** and **pytest** on Ubuntu against Python **3.10–3.13**.
+**CI:** on every push/PR to `main`, [GitHub Actions](https://github.com/chasewang0718/tulipbridge/actions/workflows/ci.yml) runs **ruff** and **pytest** on **Ubuntu** (Python **3.10–3.13**) and on **Windows** (Python **3.11**).
 
 ## Portable data directory
 

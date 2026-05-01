@@ -158,13 +158,14 @@
   - 集成测试（mock sing-box 二进制的 init 流程）
   - [x] CI（GitHub Actions：`ruff` + `pytest`，Ubuntu，Python 3.10–3.13）
 - [ ] **跨平台验证**
-  - Windows（主开发环境）
-  - Linux（常见部署环境）
+  - [x] Windows：GitHub Actions **windows-latest** + Python 3.11（CI）
+  - [x] Linux：GitHub Actions **ubuntu-latest** 矩阵（CI）
   - macOS（可选）
 - [ ] **用户文档**
   - 端到端快速开始指南
   - 路由器端口映射图文说明
   - Shadowrocket 导入步骤（截图）
+  - [x] 异步交接 / 中方最后联调（`docs/PREP_AND_CHINA_HANDOFF_ZH.md`）
   - 常见问题 / 故障排查
 - [ ] **安全审查**
   - 密钥文件权限（600 / 仅当前用户可读）
